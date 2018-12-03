@@ -1,0 +1,23 @@
+{
+  "name": "eastown/laravel-api-token",
+  "description": "API Token authentication for laravel",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Eastown",
+      "email": "eastown111@gmail.com"
+    }
+  ],
+  "minimum-stability": "dev",
+  "require": {
+    "php": ">=7.0.0",
+    "illuminate/support": "5.*",
+    "illuminate/database": "5.*",
+    "illuminate/http": "5.*"
+  },
+  "autoload": {
+    "psr-4": {
+      "Eastown\\ApiToken\\": "src/"
+    }
+  }
+}
