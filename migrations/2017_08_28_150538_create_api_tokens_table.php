@@ -18,6 +18,7 @@ class CreateApiTokensTable extends Migration
             $table->timestamp('expire_at')->nullable();
             $table->string('fingerprint');
             $table->unsignedInteger('tokenable_id')->index();
+            $table->smallInteger('status')->unsigned()->index();
             $table->string('tokenable_type');
             $table->timestamps();
         });

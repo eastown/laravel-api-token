@@ -17,7 +17,7 @@ class Token
 {
     private static $instances = [];
 
-    private $setting = [];
+    private $settings = [];
 
     private $user = null;
 
@@ -25,7 +25,7 @@ class Token
 
     private function __construct($settingKey)
     {
-        $this->setSetting($settingKey);
+        $this->setSettings($settingKey);
     }
 
     private function setUser($user)
@@ -43,17 +43,22 @@ class Token
         return $this->token;
     }
 
-    private function setSetting($settingKey)
+    private function setSettings($settingKey)
     {
-        $setting = config('api_token.' . $settingKey);
+        $settings = config('api_token.' . $settingKey);
 
-        if (!$setting) {
+        if (!$settings) {
             throw new TokenAuthException(TokenAuthException::AUTH_SETTING);
         }
 
-        $this->setting = $setting;
+        $this->settings = $settings;
 
         return $this;
+    }
+
+    private function getSetting($key, $default = null)
+    {
+        return array_get($this->settings, $key, $default);
     }
 
     /**
@@ -70,7 +75,8 @@ class Token
 
     private function getModel()
     {
-        return (new $this->setting['model'])->with($this->setting['with']);
+        $modelClass = $this->getSetting('model');
+        return (new $modelClass)->with($this->getSetting('with', []));
     }
 
     private function findUser($credential)
@@ -79,7 +85,7 @@ class Token
         $user = null;
 
         if (!$user) {
-            foreach ($this->setting['credentials'] as $credentialField) {
+            foreach ($this->getSetting('credentials', []) as $credentialField) {
 
                 $users = (clone $builder)
                     ->where($credentialField, $credential)
@@ -99,8 +105,8 @@ class Token
 
     private function verifyPassword($password, $user)
     {
-        if (isset($this->setting['password_validator']) && is_callable($this->setting['password_validator'])) {
-            $valid = call_user_func_array($this->setting['password_validator'], [$password, $user]);
+        if (is_callable($this->getSetting('password_validator'))) {
+            $valid = call_user_func_array($this->getSetting('password_validator'), [$password, $user]);
         } else {
             $valid = \Hash::check($password, $user->password);
         }
@@ -139,17 +145,32 @@ class Token
     {
         is_null($token) and $token = uniqid(dechex(mt_rand()));
 
-        $attributes = [
+        if ($this->getSetting('sso')) {
+            $user->apiToken()->whereStatus(TokenModel::STATUS_ACTIVE)
+                ->update([
+                    'status' => TokenModel::STATUS_FORBIDDEN
+                ]);
+        }
+
+        $this->deleteInvalidToken(Carbon::now()->subDays(3));
+
+        $apiToken = $user->apiToken()->create([
             'fingerprint' => $this->fingerprint(),
             'token' => $token,
             'expire_at' => Carbon::now()->addMinutes($life)
-        ];
-
-        $apiToken = $user->apiToken()->firstOrNew([]);
-
-        $apiToken->fill($attributes)->save();
+        ]);
 
         return $apiToken;
+    }
+
+    public function deleteInvalidToken(Carbon $limitTime)
+    {
+        $this->user()->apiToken()
+            ->where('created_at', '<=', $limitTime)
+            ->where(function ($query) {
+                $query->where('expire_at', '<=', Carbon::now())
+                    ->orWhere('status', TokenModel::STATUS_FORBIDDEN);
+            })->delete();
     }
 
     public function forget()
@@ -167,11 +188,15 @@ class Token
             throw new TokenAuthException(TokenAuthException::TOKEN);
         }
 
+        if ($apiToken->status == TokenModel::STATUS_FORBIDDEN) {
+            throw new TokenAuthException(TokenAuthException::SINGLE_TOKEN);
+        }
+
         if ($apiToken->expire_at < Carbon::now()) {
             throw new TokenAuthException(TokenAuthException::TOKEN_EXPIRED);
         }
 
-        if ($this->setting['verify_fingerprint'] && $apiToken->fingerprint != $this->fingerprint()) {
+        if ($this->getSetting('verify_fingerprint') && $apiToken->fingerprint != $this->fingerprint()) {
             throw new TokenAuthException(TokenAuthException::FINGERPRINT);
         }
 

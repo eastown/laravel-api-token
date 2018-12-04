@@ -10,7 +10,8 @@ return [
         'password_validator' => function($password, App\User $user){
 
         },
-        'verify_fingerprint' => true
+        'verify_fingerprint' => true,
+        'sso' => true
     ],
 
 ];
