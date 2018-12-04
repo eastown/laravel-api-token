@@ -137,7 +137,7 @@ class Token
 
         $this->setToken($this->generate($user, $life));
         $this->setUser($user);
-
+        $this->deleteInvalidToken(Carbon::now()->subDays(3));
         return $this->user();
     }
 
@@ -151,8 +151,6 @@ class Token
                     'status' => TokenModel::STATUS_FORBIDDEN
                 ]);
         }
-
-        $this->deleteInvalidToken(Carbon::now()->subDays(3));
 
         $apiToken = $user->apiToken()->create([
             'fingerprint' => $this->fingerprint(),
