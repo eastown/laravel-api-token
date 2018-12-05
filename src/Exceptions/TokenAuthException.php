@@ -21,17 +21,15 @@ class TokenAuthException extends Exception
 
     const TOKEN = 4;
 
-    const TOKEN_EXPIRED = 6;
+    const TOKEN_EXPIRED = 5;
 
-    const SINGLE_TOKEN = 7;
+    const SINGLE_TOKEN = 6;
 
-    const FINGERPRINT = 8;
+    const FINGERPRINT = 7;
 
-    const GOOGLE_AUTH = 9;
+    const AUTH_SETTING = 8;
 
-    const AUTH_SETTING = 10;
-
-    const NOT_AUTH = 11;
+    const NOT_AUTH = 9;
 
     public function __construct($code, $message = '', Exception $previous = null)
     {
