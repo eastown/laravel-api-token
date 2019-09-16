@@ -12,6 +12,7 @@ namespace Eastown\ApiToken;
 use Carbon\Carbon;
 use Eastown\ApiToken\Models\Token as TokenModel;
 use Eastown\ApiToken\Exceptions\TokenAuthException;
+use Illuminate\Support\Arr;
 
 class Token
 {
@@ -58,7 +59,7 @@ class Token
 
     private function getSetting($key, $default = null)
     {
-        return array_get($this->settings, $key, $default);
+        return Arr::get($this->settings, $key, $default);
     }
 
     /**
@@ -67,10 +68,10 @@ class Token
      */
     public static function guard($settingKey)
     {
-        if (!array_get(static::$instances, $settingKey)) {
-            array_set(static::$instances, $settingKey, new static($settingKey));
+        if (!Arr::get(static::$instances, $settingKey)) {
+            Arr::set(static::$instances, $settingKey, new static($settingKey));
         }
-        return array_get(static::$instances, $settingKey);
+        return Arr::get(static::$instances, $settingKey);
     }
 
     private function getModel()
